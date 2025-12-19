@@ -359,10 +359,28 @@ export const useGraphStore = create<State>()(
                 // Firestore throws if data contains 'undefined'. We must verify/sanitize.
                 // Firestore throws if data contains 'undefined'. We must verify/sanitize.
                 // Simplest way to ensure no 'undefined' or functions is JSON cycle.
-                const sanitize = (obj: any): any => {
-                    return JSON.parse(JSON.stringify(obj, (_key, value) => {
-                        return value === undefined ? null : value;
-                    }));
+                // Manual deep sanitization to guarantee NO undefined values
+                const deepSanitize = (obj: any): any => {
+                    if (obj === undefined) return null;
+                    if (obj === null) return null;
+                    if (typeof obj === "number" && Number.isNaN(obj)) return null;
+                    if (typeof obj === "function") return null;
+
+                    if (Array.isArray(obj)) {
+                        return obj.map(deepSanitize);
+                    }
+
+                    if (typeof obj === "object") {
+                        const res: any = {};
+                        for (const key in obj) {
+                            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                                res[key] = deepSanitize(obj[key]);
+                            }
+                        }
+                        return res;
+                    }
+
+                    return obj;
                 };
 
                 try {
@@ -371,8 +389,8 @@ export const useGraphStore = create<State>()(
                     const graphRef = doc(db, "graphs", currentUser.uid);
 
                     const payload = {
-                        nodes: sanitize(nodes),
-                        edges: sanitize(edges),
+                        nodes: deepSanitize(nodes),
+                        edges: deepSanitize(edges),
                         updatedAt: updatedAt || Date.now(),
                     };
 
