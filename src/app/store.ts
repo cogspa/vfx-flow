@@ -32,7 +32,7 @@ type State = {
     setCurrentUser: (user: { uid: string; displayName: string | null; photoURL: string | null } | null) => void;
 
     syncToFirestore: () => Promise<void>;
-    loadFromFirestore: () => Promise<void>;
+    subscribeToFirestore: (callback: (nodes: RFNode[], edges: RFEdge[]) => void) => () => void;
 };
 
 export const useGraphStore = create<State>()(
@@ -55,9 +55,27 @@ export const useGraphStore = create<State>()(
 
             addMediaNodeFromFile: async (file, position = { x: 80, y: 80 }) => {
                 const id = nanoid();
+                const { currentUser } = get();
+
+                // 1. Upload to Firebase Storage if logged in
+                let srcUrl = URL.createObjectURL(file); // Default to local for speed/offline
+
+                if (currentUser) {
+                    try {
+                        // Dynamic import to keep bundle small until needed
+                        const { storage } = await import("./firebase");
+                        const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
+
+                        const storageRef = ref(storage, `users/${currentUser.uid}/uploads/${id}_${file.name}`);
+                        await uploadBytes(storageRef, file);
+                        srcUrl = await getDownloadURL(storageRef);
+                    } catch (e) {
+                        console.error("Upload failed, falling back to local blob", e);
+                    }
+                }
+
                 const isVideo = file.type.startsWith("video/");
                 const kind: MediaKind = isVideo ? "video" : "image";
-                const srcUrl = URL.createObjectURL(file);
 
                 let durationSec: number | undefined;
                 let width: number | undefined;
@@ -74,6 +92,7 @@ export const useGraphStore = create<State>()(
 
                 if (isVideo) {
                     const { getVideoMeta } = await import("../utils/media");
+                    // Note: getVideoMeta currently relies on File object, which is fine
                     const meta = await getVideoMeta(file);
                     durationSec = meta.durationSec;
                     width = meta.width;
@@ -338,27 +357,35 @@ export const useGraphStore = create<State>()(
                 }
             },
 
-            loadFromFirestore: async () => {
+            subscribeToFirestore: (callback) => {
                 const { currentUser } = get();
-                if (!currentUser) return;
+                if (!currentUser) return () => { };
 
-                try {
-                    const { doc, getDoc } = await import("firebase/firestore");
-                    const { db } = await import("./firebase");
+                // We need to handle async import for subscription
+                // This is a bit tricky in strict synchronous return types.
+                // We'll return a cleanup function wrapper.
 
-                    const graphRef = doc(db, "graphs", currentUser.uid);
-                    const snap = await getDoc(graphRef);
+                let unsubscribe: () => void = () => { };
+                let isCancelled = false;
 
-                    if (snap.exists()) {
-                        const data = snap.data();
-                        if (data.nodes && data.edges) {
-                            set({ nodes: data.nodes as RFNode[], edges: data.edges as RFEdge[] });
-                            console.log("Loaded from Firestore");
-                        }
-                    }
-                } catch (e) {
-                    console.error("Error loading graph", e);
-                }
+                import("firebase/firestore").then(({ doc, onSnapshot }) => {
+                    import("./firebase").then(({ db }) => {
+                        if (isCancelled) return;
+
+                        const graphRef = doc(db, "graphs", currentUser.uid);
+                        unsubscribe = onSnapshot(graphRef, (snap) => {
+                            if (snap.exists()) {
+                                const data = snap.data();
+                                callback(data.nodes, data.edges);
+                            }
+                        });
+                    });
+                });
+
+                return () => {
+                    isCancelled = true;
+                    if (unsubscribe) unsubscribe();
+                };
             },
         }),
         {
