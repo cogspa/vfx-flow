@@ -43,7 +43,7 @@ export const useGraphStore = create<State>()(
             edges: [],
             selectedNodeId: null,
             currentUser: null,
-            updatedAt: Date.now(),
+            updatedAt: 0, // start at 0 so server data always wins on initial load
 
             setNodes: (nodes) => set({ nodes, updatedAt: Date.now() }),
             setEdges: (edges) => set({ edges, updatedAt: Date.now() }),
