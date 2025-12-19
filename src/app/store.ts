@@ -12,6 +12,7 @@ type State = {
     nodes: RFNode[];
     edges: RFEdge[];
     selectedNodeId: string | null;
+    updatedAt: number; // for sync conflict resolution
 
     setNodes: (nodes: RFNode[]) => void;
     setEdges: (edges: RFEdge[]) => void;
@@ -42,12 +43,14 @@ export const useGraphStore = create<State>()(
             edges: [],
             selectedNodeId: null,
             currentUser: null,
+            updatedAt: Date.now(),
 
-            setNodes: (nodes) => set({ nodes }),
-            setEdges: (edges) => set({ edges }),
+            setNodes: (nodes) => set({ nodes, updatedAt: Date.now() }),
+            setEdges: (edges) => set({ edges, updatedAt: Date.now() }),
             onNodesChange: (changes) => {
                 set({
                     nodes: applyNodeChanges(changes, get().nodes) as RFNode[],
+                    updatedAt: Date.now(),
                 });
             },
             setSelectedNodeId: (id) => set({ selectedNodeId: id }),
@@ -158,7 +161,7 @@ export const useGraphStore = create<State>()(
                     },
                 };
 
-                set({ nodes: [...get().nodes, node] });
+                set({ nodes: [...get().nodes, node], updatedAt: Date.now() });
             },
 
             addProcessNode: (type, position = { x: 120, y: 120 }) => {
@@ -325,30 +328,27 @@ export const useGraphStore = create<State>()(
                 set({
                     nodes: nodes.map((n) => {
                         if (n.id !== nodeId) return n;
-                        // patch expects either meta fields or nested fields; keep it simple:
                         if (n.data.type === "media") {
                             return { ...n, data: { ...n.data, meta: { ...n.data.meta, ...patch } } };
                         }
                         return { ...n, data: { ...n.data, meta: { ...(n.data as any).meta, ...patch } } };
-                    }),
+                    }), updatedAt: Date.now()
                 });
             },
 
             syncToFirestore: async () => {
-                const { currentUser, nodes, edges } = get();
+                const { currentUser, nodes, edges, updatedAt } = get();
                 if (!currentUser) return;
 
                 try {
                     const { doc, setDoc } = await import("firebase/firestore");
                     const { db } = await import("./firebase");
-
-                    // Save the entire graph to a document keyed by user UID
                     const graphRef = doc(db, "graphs", currentUser.uid);
 
                     await setDoc(graphRef, {
                         nodes,
                         edges,
-                        updatedAt: Date.now(),
+                        updatedAt: updatedAt || Date.now(),
                     }, { merge: true });
 
                     console.log("Saved to Firestore");
@@ -361,10 +361,6 @@ export const useGraphStore = create<State>()(
                 const { currentUser } = get();
                 if (!currentUser) return () => { };
 
-                // We need to handle async import for subscription
-                // This is a bit tricky in strict synchronous return types.
-                // We'll return a cleanup function wrapper.
-
                 let unsubscribe: () => void = () => { };
                 let isCancelled = false;
 
@@ -376,7 +372,15 @@ export const useGraphStore = create<State>()(
                         unsubscribe = onSnapshot(graphRef, (snap) => {
                             if (snap.exists()) {
                                 const data = snap.data();
-                                callback(data.nodes, data.edges);
+                                const currentLocalUpdatedAt = get().updatedAt;
+                                const serverUpdatedAt = data.updatedAt || 0;
+
+                                // Conflict Resolve: Server Wins if it is NEWER than local
+                                // But if local is NEWER (or equal, e.g. we just saved it), ignore.
+                                // We allow ~2s buffer for clock skew
+                                if (serverUpdatedAt > currentLocalUpdatedAt) {
+                                    callback(data.nodes, data.edges);
+                                }
                             }
                         });
                     });
