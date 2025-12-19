@@ -29,10 +29,15 @@ function InternalToolbar() {
     const addMedia = useGraphStore((s) => s.addMediaNodeFromFile);
     const addProcessNode = useGraphStore((s) => s.addProcessNode);
 
-    const selectedNodeId = useGraphStore((s) => s.selectedNodeId);
+    // Use derived selection from nodes for multi-select support
+    const nodes = useGraphStore((s) => s.nodes);
+    const selectedNodes = nodes.filter((n) => n.selected);
+    const selectedIds = selectedNodes.map((n) => n.id);
+    const singleSelectedId = selectedIds.length === 1 ? selectedIds[0] : null;
+
     const newVersion = useGraphStore((s) => s.newVersion);
     const fork = useGraphStore((s) => s.fork);
-    // const mergeToNewMedia = useGraphStore((s) => s.mergeToNewMedia);
+    const mergeToNewMedia = useGraphStore((s) => s.mergeToNewMedia);
 
     const currentUser = useGraphStore((s) => s.currentUser);
 
@@ -83,15 +88,16 @@ function InternalToolbar() {
 
             <div style={{ width: 1, height: 20, background: "#555", margin: "0 6px" }} />
 
-            <button disabled={!selectedNodeId} onClick={() => selectedNodeId && newVersion(selectedNodeId)}>New Version</button>
-            <button disabled={!selectedNodeId} onClick={() => selectedNodeId && fork(selectedNodeId, "B")}>Fork</button>
+            <button disabled={!singleSelectedId} onClick={() => singleSelectedId && newVersion(singleSelectedId)}>New Version</button>
+            <button disabled={!singleSelectedId} onClick={() => singleSelectedId && fork(singleSelectedId, "B")}>Fork</button>
 
             <button
+                disabled={selectedIds.length < 2}
                 onClick={() => {
-                    alert("Merge: implement multi-select, then call mergeToNewMedia([id1,id2,...])");
+                    mergeToNewMedia(selectedIds);
                 }}
             >
-                Merge
+                Merge ({selectedIds.length})
             </button>
 
             <div style={{ width: 1, height: 20, background: "#555", margin: "0 6px" }} />
