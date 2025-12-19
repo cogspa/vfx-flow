@@ -67,6 +67,8 @@ export const useGraphStore = create<State>()(
                 const id = nanoid();
                 const { currentUser } = get();
 
+                set({ syncStatus: "saving" });
+
                 // 1. Upload to Firebase Storage if logged in
                 let srcUrl = URL.createObjectURL(file); // Default to local for speed/offline
 
@@ -79,8 +81,11 @@ export const useGraphStore = create<State>()(
                         const storageRef = ref(storage, `users/${currentUser.uid}/uploads/${id}_${file.name}`);
                         await uploadBytes(storageRef, file);
                         srcUrl = await getDownloadURL(storageRef);
-                    } catch (e) {
+                    } catch (e: any) {
                         console.error("Upload failed, falling back to local blob", e);
+                        alert(`Upload to Storage Failed: ${e.message}. \nCheck your browser console and Firebase Storage Rules.`);
+                        // We still proceed with local blob so user can work, but it won't persist.
+                        set({ syncStatus: "error" });
                     }
                 }
 
