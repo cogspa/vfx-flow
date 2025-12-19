@@ -32,6 +32,9 @@ type State = {
     currentUser: { uid: string; displayName: string | null; photoURL: string | null } | null;
     setCurrentUser: (user: { uid: string; displayName: string | null; photoURL: string | null } | null) => void;
 
+    syncStatus: "synced" | "saving" | "error";
+    setSyncStatus: (status: "synced" | "saving" | "error") => void;
+
     syncToFirestore: () => Promise<void>;
     subscribeToFirestore: (callback: (nodes: RFNode[], edges: RFEdge[]) => void) => () => void;
 };
@@ -43,14 +46,18 @@ export const useGraphStore = create<State>()(
             edges: [],
             selectedNodeId: null,
             currentUser: null,
-            updatedAt: 0, // start at 0 so server data always wins on initial load
+            updatedAt: 0,
+            syncStatus: "synced",
 
-            setNodes: (nodes) => set({ nodes, updatedAt: Date.now() }),
-            setEdges: (edges) => set({ edges, updatedAt: Date.now() }),
+            setSyncStatus: (status) => set({ syncStatus: status }),
+
+            setNodes: (nodes) => set({ nodes, updatedAt: Date.now(), syncStatus: "saving" }),
+            setEdges: (edges) => set({ edges, updatedAt: Date.now(), syncStatus: "saving" }),
             onNodesChange: (changes) => {
                 set({
                     nodes: applyNodeChanges(changes, get().nodes) as RFNode[],
                     updatedAt: Date.now(),
+                    syncStatus: "saving",
                 });
             },
             setSelectedNodeId: (id) => set({ selectedNodeId: id }),
@@ -161,7 +168,7 @@ export const useGraphStore = create<State>()(
                     },
                 };
 
-                set({ nodes: [...get().nodes, node], updatedAt: Date.now() });
+                set({ nodes: [...get().nodes, node], updatedAt: Date.now(), syncStatus: "saving" });
             },
 
             addProcessNode: (type, position = { x: 120, y: 120 }) => {
@@ -369,8 +376,10 @@ export const useGraphStore = create<State>()(
                     await setDoc(graphRef, payload, { merge: true });
 
                     console.log("Saved to Firestore");
+                    set({ syncStatus: "synced" });
                 } catch (e) {
                     console.error("Error saving graph", e);
+                    set({ syncStatus: "error" });
                 }
             },
 

@@ -4,6 +4,27 @@ import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { auth } from "../app/firebase";
 
 export default function Toolbar() {
+    return (
+        <InternalToolbar />
+    );
+}
+
+function SyncIndicator() {
+    const syncStatus = useGraphStore((s) => s.syncStatus);
+    const color = syncStatus === "synced" ? "#88dd88" : syncStatus === "saving" ? "#ddaa44" : "#ff4444";
+    const text = syncStatus === "synced" ? "Saved" : syncStatus === "saving" ? "Saving..." : "Error";
+
+    // We can default to synced if undefined for now
+    if (!syncStatus) return null;
+
+    return (
+        <span style={{ fontSize: 10, color, marginRight: 4, fontWeight: "bold" }}>
+            {text}
+        </span>
+    );
+}
+
+function InternalToolbar() {
     const fileRef = useRef<HTMLInputElement | null>(null);
     const addMedia = useGraphStore((s) => s.addMediaNodeFromFile);
     const addProcessNode = useGraphStore((s) => s.addProcessNode);
@@ -77,6 +98,7 @@ export default function Toolbar() {
 
             {currentUser ? (
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <SyncIndicator />
                     {currentUser.photoURL && <img src={currentUser.photoURL} style={{ width: 24, height: 24, borderRadius: "50%" }} />}
                     <button onClick={handleLogout} style={{ fontSize: 11 }}>Sign Out</button>
                 </div>

@@ -68,7 +68,7 @@ export default function App() {
         // TODO: We technically should check if the current state is different from what we last loaded/saved
         // to avoid saving what we just received.
         syncToFirestore();
-      }, 3000); // 3s debounce
+      }, 1000); // 1s debounce
       return () => clearTimeout(timer);
     }
   }, [nodes, edges, currentUser, syncToFirestore]);
