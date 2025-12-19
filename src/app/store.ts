@@ -340,16 +340,33 @@ export const useGraphStore = create<State>()(
                 const { currentUser, nodes, edges, updatedAt } = get();
                 if (!currentUser) return;
 
+                // Firestore throws if data contains 'undefined'. We must verify/sanitize.
+                const sanitize = (obj: any): any => {
+                    if (obj === undefined) return null;
+                    if (obj === null) return null;
+                    if (Array.isArray(obj)) return obj.map(sanitize);
+                    if (typeof obj === "object") {
+                        const newObj: any = {};
+                        for (const key in obj) {
+                            newObj[key] = sanitize(obj[key]);
+                        }
+                        return newObj;
+                    }
+                    return obj;
+                };
+
                 try {
                     const { doc, setDoc } = await import("firebase/firestore");
                     const { db } = await import("./firebase");
                     const graphRef = doc(db, "graphs", currentUser.uid);
 
-                    await setDoc(graphRef, {
-                        nodes,
-                        edges,
+                    const payload = {
+                        nodes: sanitize(nodes),
+                        edges: sanitize(edges),
                         updatedAt: updatedAt || Date.now(),
-                    }, { merge: true });
+                    };
+
+                    await setDoc(graphRef, payload, { merge: true });
 
                     console.log("Saved to Firestore");
                 } catch (e) {
