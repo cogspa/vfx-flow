@@ -81,11 +81,13 @@ export const useGraphStore = create<State>()(
                         const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
 
                         const storageRef = ref(storage, `users/${currentUser.uid}/uploads/${id}_${file.name}`);
+                        console.log("Attempting upload to:", `users/${currentUser.uid}/uploads/${id}_${file.name}`);
                         await uploadBytes(storageRef, file);
+                        console.log("Upload successful");
                         srcUrl = await getDownloadURL(storageRef);
                     } catch (e: any) {
-                        console.error("Upload failed, falling back to local blob", e);
-                        alert(`Upload to Storage Failed: ${e.message}. \nCheck your browser console and Firebase Storage Rules.`);
+                        console.error("Upload failed details:", e.code, e.message, e);
+                        alert(`Upload Error: ${e.code || "Unknown"} - ${e.message}`);
                         // We still proceed with local blob so user can work, but it won't persist.
                         set({ syncStatus: "error" });
                     }
