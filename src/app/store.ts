@@ -72,7 +72,9 @@ export const useGraphStore = create<State>()(
                 // 1. Upload to Firebase Storage if logged in
                 let srcUrl = URL.createObjectURL(file); // Default to local for speed/offline
 
-                if (currentUser) {
+                if (!currentUser) {
+                    alert("⚠️ You are NOT signed in.\nThis image will NOT be saved to the cloud and will disappear on refresh.\nPlease Sign In first.");
+                } else {
                     try {
                         // Dynamic import to keep bundle small until needed
                         const { storage } = await import("./firebase");
