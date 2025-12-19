@@ -377,6 +377,8 @@ export const useGraphStore = create<State>()(
                         updatedAt: updatedAt || Date.now(),
                     };
 
+                    console.log("Sanitized Payload being sent to Firestore:", payload);
+
                     await setDoc(graphRef, payload, { merge: true });
 
                     console.log("Saved to Firestore");
