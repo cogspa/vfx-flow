@@ -358,11 +358,14 @@ export const useGraphStore = create<State>()(
                 const sanitize = (obj: any): any => {
                     if (obj === undefined) return null;
                     if (obj === null) return null;
+                    if (typeof obj === "function") return null; // Ignore functions
                     if (Array.isArray(obj)) return obj.map(sanitize);
                     if (typeof obj === "object") {
                         const newObj: any = {};
                         for (const key in obj) {
-                            newObj[key] = sanitize(obj[key]);
+                            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                                newObj[key] = sanitize(obj[key]);
+                            }
                         }
                         return newObj;
                     }
