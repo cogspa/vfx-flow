@@ -355,21 +355,13 @@ export const useGraphStore = create<State>()(
                 if (!currentUser) return;
 
                 // Firestore throws if data contains 'undefined'. We must verify/sanitize.
+                // Firestore throws if data contains 'undefined'. We must verify/sanitize.
+                // Simplest way to ensure no 'undefined' or functions is JSON cycle.
                 const sanitize = (obj: any): any => {
-                    if (obj === undefined) return null;
-                    if (obj === null) return null;
-                    if (typeof obj === "function") return null; // Ignore functions
-                    if (Array.isArray(obj)) return obj.map(sanitize);
-                    if (typeof obj === "object") {
-                        const newObj: any = {};
-                        for (const key in obj) {
-                            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                                newObj[key] = sanitize(obj[key]);
-                            }
-                        }
-                        return newObj;
-                    }
-                    return obj;
+                    return JSON.parse(JSON.stringify(obj, (_key, value) => {
+                        if (value === undefined) return null;
+                        return value;
+                    }));
                 };
 
                 try {
