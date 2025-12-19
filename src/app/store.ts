@@ -361,8 +361,7 @@ export const useGraphStore = create<State>()(
                 // Simplest way to ensure no 'undefined' or functions is JSON cycle.
                 const sanitize = (obj: any): any => {
                     return JSON.parse(JSON.stringify(obj, (_key, value) => {
-                        if (value === undefined) return null;
-                        return value;
+                        return value === undefined ? null : value;
                     }));
                 };
 
