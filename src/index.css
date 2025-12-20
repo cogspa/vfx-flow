@@ -215,3 +215,18 @@ button:disabled {
     object-fit: contain;
   }
 }
+
+/* DIAGNOSTIC TEST: Blue background for mobile */
+@media (max-width: 430px) {
+
+  body,
+  #root {
+    background-color: blue !important;
+  }
+}
+
+.mobile-only-header {
+  display: none;
+}
+
+```

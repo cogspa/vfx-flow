@@ -120,6 +120,7 @@ function InternalToolbar() {
                 <button onClick={() => fileRef.current?.click()}>Upload Media</button>
                 <button onClick={() => addProcessNode("process", { x: 200, y: 80 })}>+ Process</button>
                 <button onClick={() => addProcessNode("review", { x: 200, y: 320 })}>+ Review</button>
+                <button onClick={() => addProcessNode("delivery", { x: 200, y: 560 })}>+ Delivery</button>
             </div>
 
             <div className="toolbar-divider" />
@@ -162,8 +163,9 @@ function InternalToolbar() {
                     </div>
                 )}
             </div>
-            {/* Version indicator for caching verification */}
-            <span style={{ fontSize: 11, color: "red", fontWeight: "bold", position: "absolute", bottom: 2, right: 8 }}>v1.2 - FORCE</span>
+            {/* FORCE RELOAD TEST INDICATORS */}
+            <div className="mobile-only-header" style={{ color: "lime", fontWeight: "bold", fontSize: 12 }}>MOBILE ACTIVE</div>
+            <span style={{ fontSize: 11, color: "red", fontWeight: "bold", position: "absolute", bottom: 2, right: 8 }}>v1.3 - BLUE TEST</span>
         </div>
     );
 }
