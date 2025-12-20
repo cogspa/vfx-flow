@@ -40,6 +40,14 @@ function InternalToolbar() {
     const mergeToNewMedia = useGraphStore((s) => s.mergeToNewMedia);
 
     const currentUser = useGraphStore((s) => s.currentUser);
+    const currentGraphId = useGraphStore((s) => s.currentGraphId);
+    const currentGraphName = useGraphStore((s) => s.currentGraphName);
+    const setGraphName = useGraphStore((s) => s.setGraphName);
+    const createNewGraph = useGraphStore((s) => s.createNewGraph);
+    const availableGraphs = useGraphStore((s) => s.availableGraphs);
+    const loadGraphsList = useGraphStore((s) => s.loadGraphsList);
+    const selectGraph = useGraphStore((s) => s.selectGraph);
+    const isShowcaseMode = useGraphStore((s) => s.isShowcaseMode);
 
     const handleLogin = async () => {
         try {
@@ -59,10 +67,45 @@ function InternalToolbar() {
     return (
         <div style={{
             position: "absolute", top: 12, left: 12, zIndex: 10,
-            display: "flex", gap: 8, padding: 10,
+            display: "flex", gap: 10, padding: "8px 12px",
             background: "rgba(20,20,20,.9)", border: "1px solid #333", borderRadius: 12,
-            alignItems: "center"
+            alignItems: "center", backdropFilter: "blur(8px)"
         }}>
+            {/* Graph Selector & Naming */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginRight: 8 }}>
+                <select
+                    style={{ background: "#333", color: "#eee", border: "none", borderRadius: 4, padding: "2px 4px", fontSize: 12 }}
+                    value={currentGraphId}
+                    onFocus={() => loadGraphsList()}
+                    onChange={(e) => selectGraph(e.target.value)}
+                >
+                    {availableGraphs.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                    {availableGraphs.length === 0 && <option value="default">Default Graph</option>}
+                </select>
+
+                <input
+                    value={currentGraphName}
+                    onChange={(e) => setGraphName(e.target.value)}
+                    placeholder="Graph Title"
+                    style={{
+                        background: "transparent", border: "none", borderBottom: "1px solid #444",
+                        color: "#fff", fontWeight: "bold", width: 120, fontSize: 13
+                    }}
+                />
+
+                <button
+                    onClick={createNewGraph}
+                    style={{ padding: "2px 8px", fontSize: 11, background: "#333" }}
+                    title="New Graph"
+                >
+                    + New
+                </button>
+            </div>
+
+            <div style={{ width: 1, height: 24, background: "#444" }} />
+
             <input
                 ref={fileRef}
                 type="file"
@@ -84,7 +127,6 @@ function InternalToolbar() {
 
             <button onClick={() => addProcessNode("process", { x: 200, y: 80 })}>+ Process</button>
             <button onClick={() => addProcessNode("review", { x: 200, y: 320 })}>+ Review</button>
-            <button onClick={() => addProcessNode("delivery", { x: 200, y: 560 })}>+ Delivery</button>
 
             <div style={{ width: 1, height: 20, background: "#555", margin: "0 6px" }} />
 
@@ -105,11 +147,20 @@ function InternalToolbar() {
             {currentUser ? (
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <SyncIndicator />
-                    {currentUser.photoURL && <img src={currentUser.photoURL} style={{ width: 24, height: 24, borderRadius: "50%" }} />}
-                    <button onClick={handleLogout} style={{ fontSize: 11 }}>Sign Out</button>
+                    <button
+                        onClick={() => useGraphStore.getState().syncToFirestore()}
+                        style={{ fontSize: 10, background: "#333", padding: "2px 6px" }}
+                    >
+                        Save
+                    </button>
+                    {currentUser.photoURL && <img src={currentUser.photoURL} alt="user" style={{ width: 24, height: 24, borderRadius: "50%" }} />}
+                    <button onClick={handleLogout} style={{ fontSize: 11, background: "#442222" }}>Sign Out</button>
                 </div>
             ) : (
-                <button onClick={handleLogin}>Sign In</button>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    {isShowcaseMode && <span style={{ fontSize: 10, color: "#a855f7", fontWeight: "bold" }}>SHOWCASE MODE</span>}
+                    <button onClick={handleLogin}>Sign In</button>
+                </div>
             )}
         </div>
     );

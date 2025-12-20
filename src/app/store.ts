@@ -37,6 +37,17 @@ type State = {
 
     syncToFirestore: () => Promise<void>;
     subscribeToFirestore: (callback: (nodes: RFNode[], edges: RFEdge[]) => void) => () => void;
+
+    currentGraphId: string;
+    currentGraphName: string;
+    availableGraphs: { id: string; name: string }[];
+    setGraphName: (name: string) => void;
+    createNewGraph: () => void;
+    loadGraphsList: () => Promise<void>;
+    selectGraph: (id: string) => void;
+    loadShowcase: () => Promise<void>;
+    setAsShowcase: () => Promise<void>;
+    isShowcaseMode: boolean;
 };
 
 export const useGraphStore = create<State>()(
@@ -48,6 +59,48 @@ export const useGraphStore = create<State>()(
             currentUser: null,
             updatedAt: 0,
             syncStatus: "synced",
+            currentGraphId: "default",
+            currentGraphName: "Untitled Graph",
+            availableGraphs: [],
+
+            setGraphName: (name) => set({ currentGraphName: name, updatedAt: Date.now(), syncStatus: "saving" }),
+            createNewGraph: () => set({
+                nodes: [],
+                edges: [],
+                currentGraphId: nanoid(),
+                currentGraphName: "New Graph",
+                updatedAt: Date.now(),
+                syncStatus: "saving"
+            }),
+            loadGraphsList: async () => {
+                const { currentUser } = get();
+                if (!currentUser) return;
+                try {
+                    const { collection, getDocs } = await import("firebase/firestore");
+                    const { db } = await import("./firebase");
+                    const graphsRef = collection(db, "users", currentUser.uid, "graphs");
+                    const snap = await getDocs(graphsRef);
+                    const list = snap.docs.map(doc => ({
+                        id: doc.id,
+                        name: doc.data().currentGraphName || "Untitled"
+                    }));
+                    set({ availableGraphs: list });
+                } catch (e) {
+                    console.error("Error loading graphs list", e);
+                }
+            },
+            selectGraph: (id) => {
+                const { availableGraphs } = get();
+                const g = availableGraphs.find(x => x.id === id);
+                set({
+                    currentGraphId: id,
+                    currentGraphName: g?.name || "Untitled",
+                    nodes: [], // Will be populated by onSnapshot
+                    edges: [],
+                    updatedAt: 0 // Force reload
+                });
+            },
+            isShowcaseMode: false,
 
             setSyncStatus: (status) => set({ syncStatus: status }),
 
@@ -61,7 +114,7 @@ export const useGraphStore = create<State>()(
                 });
             },
             setSelectedNodeId: (id) => set({ selectedNodeId: id }),
-            setCurrentUser: (user) => set({ currentUser: user }),
+            setCurrentUser: (user) => set({ currentUser: user, isShowcaseMode: false }),
 
             addMediaNodeFromFile: async (file, position = { x: 80, y: 80 }) => {
                 const id = nanoid();
@@ -406,11 +459,12 @@ export const useGraphStore = create<State>()(
                     const { doc, setDoc } = await import("firebase/firestore");
                     const { db } = await import("./firebase");
 
-                    const graphRef = doc(db, "graphs", currentUser.uid);
+                    const graphRef = doc(db, "users", currentUser.uid, "graphs", get().currentGraphId);
 
                     const payload = deepSanitize({
                         nodes,
                         edges,
+                        currentGraphName: get().currentGraphName,
                         updatedAt: updatedAt || Date.now(),
                     });
                     console.log("Payload being saved to Firestore:", payload);
@@ -432,6 +486,8 @@ export const useGraphStore = create<State>()(
 
             subscribeToFirestore: (callback) => {
                 const { currentUser } = get();
+                // If we are in showcase mode, we might want to subscribe to the showcase doc instead
+                // but for now let's just make it simple.
                 if (!currentUser) return () => { };
 
                 let unsubscribe: () => void = () => { };
@@ -441,12 +497,16 @@ export const useGraphStore = create<State>()(
                     import("./firebase").then(({ db }) => {
                         if (isCancelled) return;
 
-                        const graphRef = doc(db, "graphs", currentUser.uid);
+                        const graphRef = doc(db, "users", currentUser.uid, "graphs", get().currentGraphId);
                         unsubscribe = onSnapshot(graphRef, (snap) => {
                             if (snap.exists()) {
                                 const data = snap.data();
                                 const currentLocalUpdatedAt = get().updatedAt;
                                 const serverUpdatedAt = data.updatedAt || 0;
+
+                                if (data.currentGraphName && data.currentGraphName !== get().currentGraphName) {
+                                    set({ currentGraphName: data.currentGraphName });
+                                }
 
                                 // Conflict Resolve: Server Wins if it is NEWER than local
                                 // But if local is NEWER (or equal, e.g. we just saved it), ignore.
@@ -463,6 +523,59 @@ export const useGraphStore = create<State>()(
                     isCancelled = true;
                     if (unsubscribe) unsubscribe();
                 };
+            },
+
+            loadShowcase: async () => {
+                try {
+                    const { doc, getDoc } = await import("firebase/firestore");
+                    const { db } = await import("./firebase");
+                    const showcaseRef = doc(db, "graphs", "showcase");
+                    const snap = await getDoc(showcaseRef);
+
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        set({
+                            nodes: data.nodes || [],
+                            edges: data.edges || [],
+                            updatedAt: data.updatedAt || Date.now(),
+                            isShowcaseMode: true,
+                            syncStatus: "synced"
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to load showcase:", e);
+                }
+            },
+
+            setAsShowcase: async () => {
+                const { currentUser, nodes, edges, updatedAt } = get();
+                if (!currentUser) {
+                    alert("Must be signed in to set showcase");
+                    return;
+                }
+
+                // Temporary check: only allow 'joem' or similar if we had roles
+                // For now, let's just allow anyone to set it for testing
+                try {
+                    const { doc, setDoc } = await import("firebase/firestore");
+                    const { db } = await import("./firebase");
+
+                    // Use the same sanitize logic or just a simpler version
+                    const payload = {
+                        nodes,
+                        edges,
+                        updatedAt: updatedAt || Date.now(),
+                        setBy: currentUser.uid,
+                        setName: currentUser.displayName
+                    };
+
+                    const showcaseRef = doc(db, "graphs", "showcase");
+                    await setDoc(showcaseRef, payload);
+                    alert("Graph successfully set as global showcase!");
+                } catch (e: any) {
+                    console.error("Failed to set showcase:", e);
+                    alert("Error setting showcase: " + e.message);
+                }
             },
         }),
         {

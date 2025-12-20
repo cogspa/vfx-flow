@@ -6,6 +6,8 @@ import { useGraphStore } from "./app/store";
 import GraphCanvas from "./components/GraphCanvas";
 import Toolbar from "./components/Toolbar";
 import Inspector from "./components/Inspector";
+import Hero from "./components/Hero";
+import { useState } from "react";
 
 export default function App() {
   const setCurrentUser = useGraphStore((s) => s.setCurrentUser);
@@ -13,6 +15,9 @@ export default function App() {
   const subscribeToFirestore = useGraphStore((s) => s.subscribeToFirestore);
   const setNodes = useGraphStore((s) => s.setNodes);
   const setEdges = useGraphStore((s) => s.setEdges);
+  const loadShowcase = useGraphStore((s) => s.loadShowcase);
+
+  const [heroDismissed, setHeroDismissed] = useState(false);
 
   // Watch for changes to auto-save
   // We need to be careful: if we receive an update from Firestore, it updates state.
@@ -27,6 +32,7 @@ export default function App() {
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
   const currentUser = useGraphStore((s) => s.currentUser);
+  const currentGraphId = useGraphStore((s) => s.currentGraphId);
 
   useEffect(() => {
     let firestoreUnsub: () => void = () => { };
@@ -39,13 +45,12 @@ export default function App() {
           photoURL: user.photoURL,
         });
 
+        // Cleanup old sub if switching graphs
+        if (firestoreUnsub) firestoreUnsub();
+
         // Subscribe to real-time graph updates
         firestoreUnsub = subscribeToFirestore((newNodes, newEdges) => {
-          // Optimistic Update / Merge logic could go here.
-          // For now, we overwrite local state with server state.
-          // To prevent "jitter" while dragging, we might want to disable this if user is interacting?
-          // But let's keep it simple.
-          console.log("Received update from Firestore");
+          console.log("Received update from Firestore for graph:", currentGraphId);
           setNodes(newNodes || []);
           setEdges(newEdges || []);
         });
@@ -53,28 +58,31 @@ export default function App() {
       } else {
         setCurrentUser(null);
         firestoreUnsub(); // cleanup old subscription
+        // Load showcase if signed out
+        loadShowcase();
       }
     });
     return () => {
       authUnsub();
       firestoreUnsub();
     };
-  }, [setCurrentUser, subscribeToFirestore, setNodes, setEdges]); // Stable deps
+  }, [setCurrentUser, subscribeToFirestore, setNodes, setEdges, currentGraphId]); // Include currentGraphId
 
   // Auto-save when graph changes
   useEffect(() => {
     if (currentUser) {
       const timer = setTimeout(() => {
-        // TODO: We technically should check if the current state is different from what we last loaded/saved
-        // to avoid saving what we just received.
         syncToFirestore();
       }, 1000); // 1s debounce
       return () => clearTimeout(timer);
     }
-  }, [nodes, edges, currentUser, syncToFirestore]);
+  }, [nodes, edges, currentUser, currentGraphId, syncToFirestore]); // Include currentGraphId
 
   return (
-    <div style={{ width: "100%", height: "100vh" }}>
+    <div style={{ width: "100%", height: "100vh", position: "relative" }}>
+      {!currentUser && !heroDismissed && (
+        <Hero onDismiss={() => setHeroDismissed(true)} />
+      )}
       <Toolbar />
       <Inspector />
       <GraphCanvas />
