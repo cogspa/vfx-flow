@@ -69,7 +69,7 @@ function InternalToolbar() {
             {/* Graph Selector & Naming Section */}
             <div className="toolbar-section">
                 <select
-                    style={{ background: "#333", color: "#eee", border: "none", borderRadius: 4, padding: "2px 4px", fontSize: 12 }}
+                    className="toolbar-select"
                     value={currentGraphId}
                     onFocus={() => loadGraphsList()}
                     onChange={(e) => selectGraph(e.target.value)}
@@ -84,16 +84,13 @@ function InternalToolbar() {
                     value={currentGraphName}
                     onChange={(e) => setGraphName(e.target.value)}
                     placeholder="Graph Title"
-                    style={{
-                        background: "transparent", border: "none", borderBottom: "1px solid #444",
-                        color: "#fff", fontWeight: "bold", width: 120, fontSize: 13
-                    }}
+                    className="toolbar-input"
                 />
 
                 <button
                     onClick={createNewGraph}
-                    style={{ padding: "2px 8px", fontSize: 11, background: "#333" }}
                     title="New Graph"
+                    style={{ fontSize: 11 }}
                 >
                     + New
                 </button>
@@ -151,17 +148,17 @@ function InternalToolbar() {
                         <SyncIndicator />
                         <button
                             onClick={() => useGraphStore.getState().syncToFirestore()}
-                            style={{ fontSize: 10, background: "#333", padding: "2px 6px" }}
+                            style={{ fontSize: 10, padding: "2px 6px" }}
                         >
                             Save
                         </button>
-                        {currentUser.photoURL && <img src={currentUser.photoURL} alt="user" style={{ width: 24, height: 24, borderRadius: "50%" }} />}
-                        <button onClick={handleLogout} style={{ fontSize: 11, background: "#442222" }}>Sign Out</button>
+                        {currentUser.photoURL && <img src={currentUser.photoURL} alt="user" className="toolbar-user-photo" />}
+                        <button onClick={handleLogout} className="logout-btn">Sign Out</button>
                     </>
                 ) : (
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         {isShowcaseMode && <span style={{ fontSize: 10, color: "#a855f7", fontWeight: "bold" }}>SHOWCASE MODE</span>}
-                        <button onClick={handleLogin}>Sign In</button>
+                        <button onClick={handleLogin} className="login-btn">Sign In</button>
                     </div>
                 )}
             </div>

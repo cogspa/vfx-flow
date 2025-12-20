@@ -15,6 +15,87 @@ body {
   overflow: hidden;
 }
 
+/* Reset mobile browser overrides */
+button,
+select,
+input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 4px;
+}
+
+button {
+  cursor: pointer;
+  background: #333;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 4px 10px;
+  font-family: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+button:hover {
+  background: #444;
+  border-color: #555;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolbar-select {
+  background: #333;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+.toolbar-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #444;
+  color: #fff;
+  font-weight: bold;
+  width: 120px;
+  font-size: 13px;
+  border-radius: 0;
+}
+
+.toolbar-input:focus {
+  outline: none;
+  border-bottom-color: #666;
+}
+
+.toolbar-user-photo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #444;
+}
+
+.logout-btn {
+  background: #442222;
+  border-color: #553333;
+  font-size: 11px;
+}
+
+.logout-btn:hover {
+  background: #552828;
+}
+
+.login-btn {
+  background: #224422;
+  border-color: #335533;
+}
+
+.login-btn:hover {
+  background: #285528;
+}
+
 #root {
   width: 100%;
   height: 100%;
