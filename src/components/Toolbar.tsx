@@ -163,9 +163,8 @@ function InternalToolbar() {
                     </div>
                 )}
             </div>
-            {/* FORCE RELOAD TEST INDICATORS */}
-            <div className="mobile-only-header" style={{ color: "lime", fontWeight: "bold", fontSize: 12 }}>MOBILE ACTIVE</div>
-            <span style={{ fontSize: 11, color: "red", fontWeight: "bold", position: "absolute", bottom: 2, right: 8 }}>v1.3 - BLUE TEST</span>
+            {/* Final production version check */}
+            <span style={{ fontSize: 9, opacity: 0.2, position: "absolute", bottom: 2, right: 8 }}>v1.4</span>
         </div>
     );
 }
