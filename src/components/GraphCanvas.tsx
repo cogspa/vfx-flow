@@ -24,7 +24,6 @@ import DeliveryNode from "./nodes/DeliveryNode";
 
 // Define a simple custom edge to handle the "semanticEdge" type
 function SemanticEdge({
-    id,
     sourceX,
     sourceY,
     targetX,
