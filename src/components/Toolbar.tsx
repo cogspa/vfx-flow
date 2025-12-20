@@ -162,6 +162,8 @@ function InternalToolbar() {
                     </div>
                 )}
             </div>
+            {/* Version indicator for caching verification */}
+            <span style={{ fontSize: 9, opacity: 0.3, position: "absolute", bottom: 2, right: 8 }}>v1.1</span>
         </div>
     );
 }
