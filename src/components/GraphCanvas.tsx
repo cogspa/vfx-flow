@@ -4,10 +4,13 @@ import ReactFlow, {
     Controls,
     MiniMap,
     addEdge,
+    BaseEdge,
+    getBezierPath,
     type Connection,
     type Edge,
     type Node,
     type ReactFlowInstance,
+    type EdgeProps,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -19,13 +22,49 @@ import ProcessNode from "./nodes/ProcessNode";
 import ReviewNode from "./nodes/ReviewNode";
 import DeliveryNode from "./nodes/DeliveryNode";
 
+// Define a simple custom edge to handle the "semanticEdge" type
+function SemanticEdge({
+    id,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    style,
+    markerEnd,
+}: EdgeProps) {
+    const [edgePath] = getBezierPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+    });
+
+    return <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />;
+}
+
+// Move types outside the component to avoid unnecessary re-renders/warnings
+const nodeTypes = {
+    mediaNode: MediaNode,
+    processNode: ProcessNode,
+    reviewNode: ReviewNode,
+    deliveryNode: DeliveryNode,
+};
+
+const edgeTypes = {
+    semanticEdge: SemanticEdge,
+};
+
 function edgeStyle(kind: EdgeKind): React.CSSProperties {
-    // keep simple; you can add colors/icons later
     switch (kind) {
         case "ITERATION": return { strokeWidth: 2, stroke: "#ccc" };
         case "DEPENDENCY": return { strokeDasharray: "6 4", stroke: "#888" };
         case "MERGE": return { strokeWidth: 2, stroke: "#a8f" };
         case "REVIEW": return { strokeDasharray: "2 6", stroke: "#ea4" };
+        default: return { strokeWidth: 1, stroke: "#444" };
     }
 }
 
@@ -38,13 +77,6 @@ export default function GraphCanvas() {
     const addMediaNodeFromFile = useGraphStore((s) => s.addMediaNodeFromFile);
 
     const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
-
-    const nodeTypes = useMemo(() => ({
-        mediaNode: MediaNode,
-        processNode: ProcessNode,
-        reviewNode: ReviewNode,
-        deliveryNode: DeliveryNode,
-    }), []);
 
     const styledEdges = useMemo(() => {
         return edges.map((e) => ({
@@ -77,15 +109,10 @@ export default function GraphCanvas() {
 
     const onDrop = useCallback(async (event: React.DragEvent) => {
         event.preventDefault();
-
-        // Use event.dataTransfer.files instead of event.target.files
         const files = Array.from(event.dataTransfer.files);
-
         if (files.length === 0) return;
 
-        // Default position if rfInstance is not ready/available
         let position = { x: event.clientX, y: event.clientY };
-
         if (rfInstance) {
             position = rfInstance.screenToFlowPosition({
                 x: event.clientX,
@@ -112,14 +139,13 @@ export default function GraphCanvas() {
                 nodes={nodes as Node<GraphNodeData>[]}
                 edges={styledEdges}
                 onNodesChange={onNodesChange}
-                onEdgesChange={() => {
-                    // Placeholder
-                }}
+                onEdgesChange={() => { }}
                 onNodeClick={(_, node) => setSelectedNodeId(node.id)}
                 onPaneClick={() => setSelectedNodeId(null)}
                 onConnect={onConnect}
                 onInit={setRfInstance}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 fitView
             >
                 <MiniMap />

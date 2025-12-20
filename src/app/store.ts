@@ -198,7 +198,11 @@ export const useGraphStore = create<State>()(
                     } as any,
                 };
 
-                set({ nodes: [...get().nodes, node] });
+                set({
+                    nodes: [...get().nodes, node],
+                    updatedAt: Date.now(),
+                    syncStatus: "saving",
+                });
             },
 
             connect: (source, target, kind) => {
@@ -209,7 +213,11 @@ export const useGraphStore = create<State>()(
                     type: "semanticEdge",
                     data: { kind },
                 };
-                set({ edges: [...get().edges, edge] });
+                set({
+                    edges: [...get().edges, edge],
+                    updatedAt: Date.now(),
+                    syncStatus: "saving",
+                });
             },
 
             newVersion: (nodeId) => {
@@ -244,7 +252,12 @@ export const useGraphStore = create<State>()(
                     data: { kind: "ITERATION" },
                 };
 
-                set({ nodes: [...nodes, clone], edges: [...edges, edge] });
+                set({
+                    nodes: [...nodes, clone],
+                    edges: [...edges, edge],
+                    updatedAt: Date.now(),
+                    syncStatus: "saving",
+                });
             },
 
             fork: (nodeId, suffix = "A") => {
@@ -336,7 +349,12 @@ export const useGraphStore = create<State>()(
                     data: { kind: "DEPENDENCY" },
                 };
 
-                set({ nodes: [...nodes, mergeNode, outNode], edges: [...edges, ...mergeEdges, outEdge] });
+                set({
+                    nodes: [...nodes, mergeNode, outNode],
+                    edges: [...edges, ...mergeEdges, outEdge],
+                    updatedAt: Date.now(),
+                    syncStatus: "saving",
+                });
             },
 
             updateNodeMeta: (nodeId, patch) => {
@@ -348,7 +366,9 @@ export const useGraphStore = create<State>()(
                             return { ...n, data: { ...n.data, meta: { ...n.data.meta, ...patch } } };
                         }
                         return { ...n, data: { ...n.data, meta: { ...(n.data as any).meta, ...patch } } };
-                    }), updatedAt: Date.now()
+                    }),
+                    updatedAt: Date.now(),
+                    syncStatus: "saving"
                 });
             },
 
@@ -356,15 +376,12 @@ export const useGraphStore = create<State>()(
                 const { currentUser, nodes, edges, updatedAt } = get();
                 if (!currentUser) return;
 
-                // Firestore throws if data contains 'undefined'. We must verify/sanitize.
-                // Firestore throws if data contains 'undefined'. We must verify/sanitize.
-                // Simplest way to ensure no 'undefined' or functions is JSON cycle.
-                // Manual deep sanitization to guarantee NO undefined values
+                // Function to deep sanitize object for Firestore (replaces undefined with null)
                 const deepSanitize = (obj: any): any => {
                     if (obj === undefined) return null;
                     if (obj === null) return null;
-                    if (typeof obj === "number" && Number.isNaN(obj)) return null;
-                    if (typeof obj === "function") return null;
+                    if (typeof obj === "number" && (Number.isNaN(obj) || !isFinite(obj))) return null;
+                    if (typeof obj === "function" || typeof obj === "symbol") return null;
 
                     if (Array.isArray(obj)) {
                         return obj.map(deepSanitize);
@@ -374,34 +391,41 @@ export const useGraphStore = create<State>()(
                         const res: any = {};
                         for (const key in obj) {
                             if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                                res[key] = deepSanitize(obj[key]);
+                                const val = deepSanitize(obj[key]);
+                                if (val !== undefined) {
+                                    res[key] = val;
+                                }
                             }
                         }
                         return res;
                     }
-
                     return obj;
                 };
 
                 try {
                     const { doc, setDoc } = await import("firebase/firestore");
                     const { db } = await import("./firebase");
+
                     const graphRef = doc(db, "graphs", currentUser.uid);
 
-                    const payload = {
-                        nodes: deepSanitize(nodes),
-                        edges: deepSanitize(edges),
+                    const payload = deepSanitize({
+                        nodes,
+                        edges,
                         updatedAt: updatedAt || Date.now(),
-                    };
+                    });
+                    console.log("Payload being saved to Firestore:", payload);
 
-                    console.log("Sanitized Payload being sent to Firestore:", payload);
+                    console.log("Saving graph to Firestore...", {
+                        nodeCount: nodes.length,
+                        edgeCount: edges.length,
+                    });
 
                     await setDoc(graphRef, payload, { merge: true });
 
-                    console.log("Saved to Firestore");
+                    console.log("Successfully saved to Firestore");
                     set({ syncStatus: "synced" });
-                } catch (e) {
-                    console.error("Error saving graph", e);
+                } catch (e: any) {
+                    console.error("Error saving graph to Firestore:", e.message || e);
                     set({ syncStatus: "error" });
                 }
             },
