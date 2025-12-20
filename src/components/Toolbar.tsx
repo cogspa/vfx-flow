@@ -65,14 +65,9 @@ function InternalToolbar() {
 
 
     return (
-        <div style={{
-            position: "absolute", top: 12, left: 12, zIndex: 10,
-            display: "flex", gap: 10, padding: "8px 12px",
-            background: "rgba(20,20,20,.9)", border: "1px solid #333", borderRadius: 12,
-            alignItems: "center", backdropFilter: "blur(8px)"
-        }}>
-            {/* Graph Selector & Naming */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginRight: 8 }}>
+        <div className="toolbar">
+            {/* Graph Selector & Naming Section */}
+            <div className="toolbar-section">
                 <select
                     style={{ background: "#333", color: "#eee", border: "none", borderRadius: 4, padding: "2px 4px", fontSize: 12 }}
                     value={currentGraphId}
@@ -104,64 +99,72 @@ function InternalToolbar() {
                 </button>
             </div>
 
-            <div style={{ width: 1, height: 24, background: "#444" }} />
+            <div className="toolbar-divider" />
 
-            <input
-                ref={fileRef}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                style={{ display: "none" }}
-                onChange={async (e) => {
-                    const files = Array.from(e.target.files ?? []);
-                    let y = 80;
-                    for (const f of files) {
-                        await addMedia(f, { x: 80, y });
-                        y += 260;
-                    }
-                    if (fileRef.current) fileRef.current.value = "";
-                }}
-            />
+            {/* Media & Process Actions Section */}
+            <div className="toolbar-section">
+                <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    style={{ display: "none" }}
+                    onChange={async (e) => {
+                        const files = Array.from(e.target.files ?? []);
+                        let y = 80;
+                        for (const f of files) {
+                            await addMedia(f, { x: 80, y });
+                            y += 260;
+                        }
+                        if (fileRef.current) fileRef.current.value = "";
+                    }}
+                />
 
-            <button onClick={() => fileRef.current?.click()}>Upload Media</button>
+                <button onClick={() => fileRef.current?.click()}>Upload Media</button>
+                <button onClick={() => addProcessNode("process", { x: 200, y: 80 })}>+ Process</button>
+                <button onClick={() => addProcessNode("review", { x: 200, y: 320 })}>+ Review</button>
+            </div>
 
-            <button onClick={() => addProcessNode("process", { x: 200, y: 80 })}>+ Process</button>
-            <button onClick={() => addProcessNode("review", { x: 200, y: 320 })}>+ Review</button>
+            <div className="toolbar-divider" />
 
-            <div style={{ width: 1, height: 20, background: "#555", margin: "0 6px" }} />
+            {/* Versioning Actions Section */}
+            <div className="toolbar-section">
+                <button disabled={!singleSelectedId} onClick={() => singleSelectedId && newVersion(singleSelectedId)}>New Version</button>
+                <button disabled={!singleSelectedId} onClick={() => singleSelectedId && fork(singleSelectedId, "B")}>Fork</button>
 
-            <button disabled={!singleSelectedId} onClick={() => singleSelectedId && newVersion(singleSelectedId)}>New Version</button>
-            <button disabled={!singleSelectedId} onClick={() => singleSelectedId && fork(singleSelectedId, "B")}>Fork</button>
+                <button
+                    disabled={selectedIds.length < 2}
+                    onClick={() => {
+                        mergeToNewMedia(selectedIds);
+                    }}
+                >
+                    Merge ({selectedIds.length})
+                </button>
+            </div>
 
-            <button
-                disabled={selectedIds.length < 2}
-                onClick={() => {
-                    mergeToNewMedia(selectedIds);
-                }}
-            >
-                Merge ({selectedIds.length})
-            </button>
+            <div className="toolbar-divider" />
 
-            <div style={{ width: 1, height: 20, background: "#555", margin: "0 6px" }} />
-
-            {currentUser ? (
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <SyncIndicator />
-                    <button
-                        onClick={() => useGraphStore.getState().syncToFirestore()}
-                        style={{ fontSize: 10, background: "#333", padding: "2px 6px" }}
-                    >
-                        Save
-                    </button>
-                    {currentUser.photoURL && <img src={currentUser.photoURL} alt="user" style={{ width: 24, height: 24, borderRadius: "50%" }} />}
-                    <button onClick={handleLogout} style={{ fontSize: 11, background: "#442222" }}>Sign Out</button>
-                </div>
-            ) : (
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    {isShowcaseMode && <span style={{ fontSize: 10, color: "#a855f7", fontWeight: "bold" }}>SHOWCASE MODE</span>}
-                    <button onClick={handleLogin}>Sign In</button>
-                </div>
-            )}
+            {/* Sync & Auth Section */}
+            <div className="toolbar-section">
+                {currentUser ? (
+                    <>
+                        <SyncIndicator />
+                        <button
+                            onClick={() => useGraphStore.getState().syncToFirestore()}
+                            style={{ fontSize: 10, background: "#333", padding: "2px 6px" }}
+                        >
+                            Save
+                        </button>
+                        {currentUser.photoURL && <img src={currentUser.photoURL} alt="user" style={{ width: 24, height: 24, borderRadius: "50%" }} />}
+                        <button onClick={handleLogout} style={{ fontSize: 11, background: "#442222" }}>Sign Out</button>
+                    </>
+                ) : (
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        {isShowcaseMode && <span style={{ fontSize: 10, color: "#a855f7", fontWeight: "bold" }}>SHOWCASE MODE</span>}
+                        <button onClick={handleLogin}>Sign In</button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

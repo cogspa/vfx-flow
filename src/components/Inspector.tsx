@@ -12,19 +12,14 @@ export default function Inspector() {
     const meta = data?.meta;
 
     return (
-        <div style={{
-            position: "absolute", top: 12, right: 12, zIndex: 10,
-            width: 340, padding: 12,
-            background: "rgba(20,20,20,.9)", border: "1px solid #333", borderRadius: 12,
-            color: "#eee"
-        }}>
+        <div className="inspector">
             <div style={{ fontWeight: 800, marginBottom: 10 }}>Inspector</div>
 
             {data.type === "media" && meta?.kind === "video" && meta.srcUrl && (
                 <video src={meta.srcUrl} controls style={{ width: "100%", borderRadius: 10 }} />
             )}
             {data.type === "media" && meta?.kind === "image" && meta.srcUrl && (
-                <img src={meta.srcUrl} style={{ width: "100%", borderRadius: 10 }} />
+                <img src={meta.srcUrl} alt="media" style={{ width: "100%", borderRadius: 10 }} />
             )}
 
             <label style={{ display: "block", marginTop: 10, fontSize: 12, opacity: 0.9 }}>Title</label>
