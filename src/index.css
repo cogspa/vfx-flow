@@ -121,5 +121,16 @@ body {
   .inspector input,
   .inspector select {
     font-size: 11px;
+    padding: 2px 4px;
+  }
+
+  /* Shrink media preview specifically */
+  .inspector img,
+  .inspector video {
+    max-height: 80px;
+    width: auto !important;
+    display: block;
+    margin: 4px auto;
+    object-fit: contain;
   }
 }
