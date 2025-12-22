@@ -163,6 +163,7 @@ export default function GraphCanvas() {
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 minZoom={0.1}
+                maxZoom={4}
                 deleteKeyCode={currentUser ? ["Backspace", "Delete"] : null}
                 fitView={false}
             >
