@@ -478,6 +478,9 @@ export const useGraphStore = create<State>()(
                         updatedAt: updatedAt || Date.now(),
                         viewport: get().viewport,
                     });
+
+                    // Update local state to match what we are sending to avoid re-syncing from the echo snapshot
+                    set({ updatedAt: payload.updatedAt });
                     console.log("Payload being saved to Firestore:", payload);
 
                     console.log("Saving graph to Firestore...", {
@@ -548,7 +551,12 @@ export const useGraphStore = create<State>()(
                                 if (serverUpdatedAt > currentLocalUpdatedAt) {
                                     callback(data.nodes, data.edges);
                                     if (data.viewport) {
-                                        set({ viewport: data.viewport });
+                                        set({
+                                            viewport: data.viewport,
+                                            updatedAt: serverUpdatedAt
+                                        });
+                                    } else {
+                                        set({ updatedAt: serverUpdatedAt });
                                     }
                                 }
                             }
