@@ -79,19 +79,18 @@ export default function GraphCanvas() {
     const viewport = useGraphStore((s) => s.viewport);
     const currentUser = useGraphStore((s) => s.currentUser);
 
+    const currentGraphId = useGraphStore((s) => s.currentGraphId);
+    const updatedAt = useGraphStore((s) => s.updatedAt);
+    const isShowcaseMode = useGraphStore((s) => s.isShowcaseMode);
+
     const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
 
-    // Sync from store to ReactFlow instance (e.g. on load)
+    // Sync from store to ReactFlow instance (only when underlying graph context changes)
     React.useEffect(() => {
         if (rfInstance && viewport) {
-            const current = rfInstance.getViewport();
-            if (current.x !== viewport.x || current.y !== viewport.y || current.zoom !== viewport.zoom) {
-                // Only set if significantly different to avoid loops
-                // Or just trust the store on initial load/remote update
-                rfInstance.setViewport(viewport);
-            }
+            rfInstance.setViewport(viewport);
         }
-    }, [rfInstance, viewport]);
+    }, [rfInstance, currentGraphId, updatedAt, isShowcaseMode]);
 
     const styledEdges = useMemo(() => {
         return edges.map((e) => ({
