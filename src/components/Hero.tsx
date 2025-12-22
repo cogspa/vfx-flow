@@ -23,12 +23,16 @@ export default function Hero({ onDismiss }: HeroProps) {
             <div className="hero-content">
                 <div className="hero-badge">PREVIEW MODE</div>
                 <h1 className="hero-title">
-                    Modular <span className="highlight">VFX Flow</span>
+                    Joe <span className="highlight">"Modular"</span> Micallef
                 </h1>
-                <p className="hero-subtitle">
-                    A node-based workspace for visual effects coordination,
-                    review, and versioning. Experience the future of studio pipelines.
-                </p>
+                <h2 className="hero-subhead">Temporary Portfolio Space</h2>
+                <div className="hero-description">
+                    The intention of this site is to provide a node-based<br />
+                    process flow space for filmmakers, AI artists & designers.<br />
+                    Additionally, it is serving as my temporary portfolio.<br />
+                    Quick "Explore Showcase" to see my work samples.<br />
+                    Sign up to create your own process flows.
+                </div>
                 <div className="hero-cta-group">
                     <button className="cta-primary" onClick={handleLogin}>
                         Sign In with Google
@@ -39,7 +43,8 @@ export default function Hero({ onDismiss }: HeroProps) {
                 </div>
             </div>
             <div className="hero-footer">
-                Built for VFX Professionals & Pipeline Engineers
+                Built for VFX Professionals & Pipeline Engineers<br />
+                Created by Joe Micallef • <a href="mailto:jmicalle@gmail.com" style={{ color: "inherit", textDecoration: "underline" }}>jmicalle@gmail.com</a>
             </div>
         </div>
     );

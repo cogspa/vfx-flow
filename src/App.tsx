@@ -86,6 +86,20 @@ export default function App() {
       <Toolbar />
       <Inspector />
       <GraphCanvas />
+      <div style={{
+        position: "fixed",
+        bottom: 12,
+        left: "50%",
+        transform: "translateX(-50%)",
+        fontSize: "10px",
+        color: "rgba(255,255,255,0.2)",
+        zIndex: 10,
+        fontFamily: "Inter, sans-serif",
+        textAlign: "center",
+        pointerEvents: "none"
+      }}>
+        Created by Joe Micallef • <a href="mailto:jmicalle@gmail.com" style={{ color: "inherit", textDecoration: "none", pointerEvents: "auto" }}>jmicalle@gmail.com</a>
+      </div>
     </div>
   );
 }
