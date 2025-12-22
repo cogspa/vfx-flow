@@ -14,6 +14,7 @@ type State = {
     selectedNodeId: string | null;
     updatedAt: number; // for sync conflict resolution
     viewport: { x: number; y: number; zoom: number };
+    showcaseUpdatedTimestamp: number | null;
 
     setNodes: (nodes: RFNode[]) => void;
     setEdges: (edges: RFEdge[]) => void;
@@ -61,6 +62,7 @@ export const useGraphStore = create<State>()(
             currentUser: null,
             updatedAt: 0,
             viewport: { x: 0, y: 0, zoom: 1 },
+            showcaseUpdatedTimestamp: null,
             syncStatus: "synced",
             currentGraphId: "default",
             currentGraphName: "Untitled Graph",
@@ -505,7 +507,7 @@ export const useGraphStore = create<State>()(
 
                         await setDoc(showcaseRef, cleanPayload);
                         console.log("Updated global showcase graph (filtered local nodes)");
-                        alert("Global Showcase Updated!");
+                        set({ showcaseUpdatedTimestamp: Date.now() });
                     }
 
                     console.log("Successfully saved to Firestore");

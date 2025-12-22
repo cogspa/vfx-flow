@@ -100,6 +100,43 @@ export default function App() {
       }}>
         Created by Joe Micallef • <a href="mailto:jmicalle@gmail.com" style={{ color: "inherit", textDecoration: "none", pointerEvents: "auto" }}>jmicalle@gmail.com</a>
       </div>
+      <ShowcaseNotification />
+    </div>
+  );
+}
+
+function ShowcaseNotification() {
+  const showcaseUpdatedTimestamp = useGraphStore((s) => s.showcaseUpdatedTimestamp);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (showcaseUpdatedTimestamp) {
+      setVisible(true);
+      const timer = setTimeout(() => setVisible(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showcaseUpdatedTimestamp]);
+
+  if (!visible) return null;
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 20,
+      left: "50%",
+      transform: "translateX(-50%)",
+      background: "#8257e5",
+      color: "white",
+      padding: "8px 16px",
+      borderRadius: "20px",
+      fontSize: "14px",
+      fontWeight: "bold",
+      boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+      zIndex: 2000,
+      pointerEvents: "none",
+      animation: "fadeInOut 3s forwards"
+    }}>
+      Global Showcase Updated!
     </div>
   );
 }
