@@ -13,9 +13,11 @@ type State = {
     edges: RFEdge[];
     selectedNodeId: string | null;
     updatedAt: number; // for sync conflict resolution
+    viewport: { x: number; y: number; zoom: number };
 
     setNodes: (nodes: RFNode[]) => void;
     setEdges: (edges: RFEdge[]) => void;
+    setViewport: (viewport: { x: number; y: number; zoom: number }) => void;
     onNodesChange: (changes: NodeChange[]) => void;
     setSelectedNodeId: (id: string | null) => void;
 
@@ -29,8 +31,8 @@ type State = {
     mergeToNewMedia: (nodeIds: string[], title?: string) => void;
 
     updateNodeMeta: (nodeId: string, patch: Partial<any>) => void; // simple patch helper
-    currentUser: { uid: string; displayName: string | null; photoURL: string | null } | null;
-    setCurrentUser: (user: { uid: string; displayName: string | null; photoURL: string | null } | null) => void;
+    currentUser: { uid: string; email?: string | null; displayName: string | null; photoURL: string | null } | null;
+    setCurrentUser: (user: { uid: string; email?: string | null; displayName: string | null; photoURL: string | null } | null) => void;
 
     syncStatus: "synced" | "saving" | "error";
     setSyncStatus: (status: "synced" | "saving" | "error") => void;
@@ -58,6 +60,7 @@ export const useGraphStore = create<State>()(
             selectedNodeId: null,
             currentUser: null,
             updatedAt: 0,
+            viewport: { x: 0, y: 0, zoom: 1 },
             syncStatus: "synced",
             currentGraphId: "default",
             currentGraphName: "Untitled Graph",
@@ -106,6 +109,7 @@ export const useGraphStore = create<State>()(
 
             setNodes: (nodes) => set({ nodes, updatedAt: Date.now(), syncStatus: "saving" }),
             setEdges: (edges) => set({ edges, updatedAt: Date.now(), syncStatus: "saving" }),
+            setViewport: (viewport) => set({ viewport }),
             onNodesChange: (changes) => {
                 set({
                     nodes: applyNodeChanges(changes, get().nodes) as RFNode[],
@@ -126,22 +130,26 @@ export const useGraphStore = create<State>()(
                 let srcUrl = URL.createObjectURL(file); // Default to local for speed/offline
 
                 if (!currentUser) {
-                    alert("⚠️ You are NOT signed in.\nThis image will NOT be saved to the cloud and will disappear on refresh.\nPlease Sign In first.");
+                    alert("⚠️ Sign In Required: You must be signed in to upload media.");
+                    set({ syncStatus: "synced" });
+                    return;
                 } else {
                     try {
                         // Dynamic import to keep bundle small until needed
                         const { storage } = await import("./firebase");
                         const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
 
-                        const storageRef = ref(storage, `users/${currentUser.uid}/uploads/${id}_${file.name}`);
-                        console.log("Attempting upload to:", `users/${currentUser.uid}/uploads/${id}_${file.name}`);
+                        // Sanitize filename
+                        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+                        const storageRef = ref(storage, `users/${currentUser.uid}/uploads/${id}_${safeName}`);
+
+                        console.log("Attempting upload to:", storageRef.fullPath);
                         await uploadBytes(storageRef, file);
                         console.log("Upload successful");
                         srcUrl = await getDownloadURL(storageRef);
                     } catch (e: any) {
                         console.error("Upload failed details:", e.code, e.message, e);
-                        alert(`Upload Error: ${e.code || "Unknown"} - ${e.message}`);
-                        // We still proceed with local blob so user can work, but it won't persist.
+                        alert(`Upload Failed: ${e.message}\nUsing local placeholder.\nNote: This node will NOT be visible in the public showcase.`);
                         set({ syncStatus: "error" });
                     }
                 }
@@ -466,6 +474,7 @@ export const useGraphStore = create<State>()(
                         edges,
                         currentGraphName: get().currentGraphName,
                         updatedAt: updatedAt || Date.now(),
+                        viewport: get().viewport,
                     });
                     console.log("Payload being saved to Firestore:", payload);
 
@@ -475,6 +484,29 @@ export const useGraphStore = create<State>()(
                     });
 
                     await setDoc(graphRef, payload, { merge: true });
+
+                    // Auto-update global showcase if user is admin (jmicalle@gmail.com)
+                    if (currentUser.email === "jmicalle@gmail.com") {
+                        const showcaseRef = doc(db, "graphs", "showcase");
+
+                        // Filter out nodes that have local blob URLs or missing URLs (broken for others)
+                        const cleanPayloadNodes = (payload.nodes as any[]).filter((n) => {
+                            if (n.data?.type === "media") {
+                                const url = n.data?.meta?.srcUrl;
+                                // Reject if no URL or blob URL
+                                if (!url || typeof url !== "string" || url.startsWith("blob:")) {
+                                    return false;
+                                }
+                            }
+                            return true;
+                        });
+
+                        const cleanPayload = { ...payload, nodes: cleanPayloadNodes };
+
+                        await setDoc(showcaseRef, cleanPayload);
+                        console.log("Updated global showcase graph (filtered local nodes)");
+                        alert("Global Showcase Updated!");
+                    }
 
                     console.log("Successfully saved to Firestore");
                     set({ syncStatus: "synced" });
@@ -513,6 +545,9 @@ export const useGraphStore = create<State>()(
                                 // We allow ~2s buffer for clock skew
                                 if (serverUpdatedAt > currentLocalUpdatedAt) {
                                     callback(data.nodes, data.edges);
+                                    if (data.viewport) {
+                                        set({ viewport: data.viewport });
+                                    }
                                 }
                             }
                         });
@@ -538,6 +573,7 @@ export const useGraphStore = create<State>()(
                             nodes: data.nodes || [],
                             edges: data.edges || [],
                             updatedAt: data.updatedAt || Date.now(),
+                            viewport: data.viewport || { x: 0, y: 0, zoom: 1 },
                             isShowcaseMode: true,
                             syncStatus: "synced"
                         });

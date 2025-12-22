@@ -75,7 +75,23 @@ export default function GraphCanvas() {
     const setSelectedNodeId = useGraphStore((s) => s.setSelectedNodeId);
     const addMediaNodeFromFile = useGraphStore((s) => s.addMediaNodeFromFile);
 
+    const setViewport = useGraphStore((s) => s.setViewport);
+    const viewport = useGraphStore((s) => s.viewport);
+    const currentUser = useGraphStore((s) => s.currentUser);
+
     const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
+
+    // Sync from store to ReactFlow instance (e.g. on load)
+    React.useEffect(() => {
+        if (rfInstance && viewport) {
+            const current = rfInstance.getViewport();
+            if (current.x !== viewport.x || current.y !== viewport.y || current.zoom !== viewport.zoom) {
+                // Only set if significantly different to avoid loops
+                // Or just trust the store on initial load/remote update
+                rfInstance.setViewport(viewport);
+            }
+        }
+    }, [rfInstance, viewport]);
 
     const styledEdges = useMemo(() => {
         return edges.map((e) => ({
@@ -143,9 +159,12 @@ export default function GraphCanvas() {
                 onPaneClick={() => setSelectedNodeId(null)}
                 onConnect={onConnect}
                 onInit={setRfInstance}
+                onMoveEnd={(_, v) => setViewport(v)}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
-                fitView
+                minZoom={0.1}
+                deleteKeyCode={currentUser ? ["Backspace", "Delete"] : null}
+                fitView={false}
             >
                 <MiniMap />
                 <Controls />

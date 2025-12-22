@@ -117,7 +117,7 @@ function InternalToolbar() {
                     }}
                 />
 
-                <button onClick={() => fileRef.current?.click()}>Upload Media</button>
+                {currentUser && <button onClick={() => fileRef.current?.click()}>Upload Media</button>}
                 <button onClick={() => addProcessNode("process", { x: 200, y: 80 })}>+ Process</button>
                 <button onClick={() => addProcessNode("review", { x: 200, y: 320 })}>+ Review</button>
                 <button onClick={() => addProcessNode("delivery", { x: 200, y: 560 })}>+ Delivery</button>

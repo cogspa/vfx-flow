@@ -11,7 +11,7 @@ import { useState } from "react";
 
 export default function App() {
   const setCurrentUser = useGraphStore((s) => s.setCurrentUser);
-  const syncToFirestore = useGraphStore((s) => s.syncToFirestore);
+  // const syncToFirestore = useGraphStore((s) => s.syncToFirestore);
   const subscribeToFirestore = useGraphStore((s) => s.subscribeToFirestore);
   const setNodes = useGraphStore((s) => s.setNodes);
   const setEdges = useGraphStore((s) => s.setEdges);
@@ -29,8 +29,6 @@ export default function App() {
   // For now, we will rely on the debounce, but it's risky.
   // Better: Don't auto-save inside the same hook that receives updates.
 
-  const nodes = useGraphStore((s) => s.nodes);
-  const edges = useGraphStore((s) => s.edges);
   const currentUser = useGraphStore((s) => s.currentUser);
   const currentGraphId = useGraphStore((s) => s.currentGraphId);
 
@@ -41,6 +39,7 @@ export default function App() {
       if (user) {
         setCurrentUser({
           uid: user.uid,
+          email: user.email,
           displayName: user.displayName,
           photoURL: user.photoURL,
         });
@@ -69,14 +68,15 @@ export default function App() {
   }, [setCurrentUser, subscribeToFirestore, setNodes, setEdges, currentGraphId]); // Include currentGraphId
 
   // Auto-save when graph changes
-  useEffect(() => {
-    if (currentUser) {
-      const timer = setTimeout(() => {
-        syncToFirestore();
-      }, 1000); // 1s debounce
-      return () => clearTimeout(timer);
-    }
-  }, [nodes, edges, currentUser, currentGraphId, syncToFirestore]); // Include currentGraphId
+  // Auto-save disabled by user request. Manual save only.
+  // useEffect(() => {
+  //   if (currentUser) {
+  //     const timer = setTimeout(() => {
+  //       syncToFirestore();
+  //     }, 1000); // 1s debounce
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [nodes, edges, currentUser, currentGraphId, syncToFirestore]);
 
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative" }}>
