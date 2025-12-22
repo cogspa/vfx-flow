@@ -88,7 +88,15 @@ export default function GraphCanvas() {
     // Sync from store to ReactFlow instance (only when underlying graph context changes)
     React.useEffect(() => {
         if (rfInstance && viewport) {
-            rfInstance.setViewport(viewport);
+            const current = rfInstance.getViewport();
+            const dx = Math.abs(current.x - viewport.x);
+            const dy = Math.abs(current.y - viewport.y);
+            const dz = Math.abs(current.zoom - viewport.zoom);
+
+            // Only force viewport if difference is significant to avoid interrupting user gestures
+            if (dx > 1 || dy > 1 || dz > 0.01) {
+                rfInstance.setViewport(viewport);
+            }
         }
     }, [rfInstance, currentGraphId, updatedAt, isShowcaseMode]);
 

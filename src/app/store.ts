@@ -109,15 +109,24 @@ export const useGraphStore = create<State>()(
 
             setSyncStatus: (status) => set({ syncStatus: status }),
 
-            setNodes: (nodes) => set({ nodes, updatedAt: Date.now(), syncStatus: "saving" }),
-            setEdges: (edges) => set({ edges, updatedAt: Date.now(), syncStatus: "saving" }),
+            setNodes: (nodes) => set({ nodes }),
+            setEdges: (edges) => set({ edges }),
             setViewport: (viewport) => set({ viewport }),
             onNodesChange: (changes) => {
-                set({
-                    nodes: applyNodeChanges(changes, get().nodes) as RFNode[],
-                    updatedAt: Date.now(),
-                    syncStatus: "saving",
-                });
+                const newNodes = applyNodeChanges(changes, get().nodes) as RFNode[];
+                // Only update updatedAt and syncStatus if there's a structural or position change
+                // (e.g. not just a selection change)
+                const isSignificant = changes.some(c => c.type === "position" || c.type === "remove" || c.type === "dimensions" || c.type === "reset");
+
+                if (isSignificant) {
+                    set({
+                        nodes: newNodes,
+                        updatedAt: Date.now(),
+                        syncStatus: "saving",
+                    });
+                } else {
+                    set({ nodes: newNodes });
+                }
             },
             setSelectedNodeId: (id) => set({ selectedNodeId: id }),
             setCurrentUser: (user) => set({ currentUser: user, isShowcaseMode: false }),
@@ -546,9 +555,8 @@ export const useGraphStore = create<State>()(
                                 }
 
                                 // Conflict Resolve: Server Wins if it is NEWER than local
-                                // But if local is NEWER (or equal, e.g. we just saved it), ignore.
-                                // We allow ~2s buffer for clock skew
-                                if (serverUpdatedAt > currentLocalUpdatedAt) {
+                                // Added 1000ms buffer to allow for slight clock skew and local interaction lag
+                                if (serverUpdatedAt > currentLocalUpdatedAt + 1000) {
                                     callback(data.nodes, data.edges);
                                     if (data.viewport) {
                                         set({
@@ -626,7 +634,12 @@ export const useGraphStore = create<State>()(
         }),
         {
             name: "vfx-flow-graph",
-            partialize: (state) => ({ nodes: state.nodes, edges: state.edges }),
+            partialize: (state) => ({
+                nodes: state.nodes,
+                edges: state.edges,
+                viewport: state.viewport,
+                updatedAt: state.updatedAt
+            }),
         }
     )
 );
