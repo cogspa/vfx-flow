@@ -9,8 +9,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.8) 100%);
-    backdrop-filter: blur(8px);
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%);
+    backdrop-filter: blur(12px);
     color: white;
     text-align: center;
     padding: 2rem;
@@ -33,7 +33,7 @@
     font-weight: 600;
     letter-spacing: 2px;
     margin-bottom: 2rem;
-    color: #aaa;
+    color: #cbd5e1;
 }
 
 .hero-title {
@@ -42,13 +42,15 @@
     margin-bottom: 1rem;
     line-height: 1.1;
     letter-spacing: -3px;
+    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .hero-title .highlight {
-    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #818cf8 0%, #d8b4fe 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 2em rgba(168, 85, 247, 0.4));
 }
 
 .hero-subhead {
@@ -57,16 +59,18 @@
     margin-bottom: 2rem;
     color: white;
     letter-spacing: -1px;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .hero-description {
     font-size: 1.1rem;
-    color: #cbd5e1;
+    color: white;
     margin-bottom: 3rem;
     line-height: 1.6;
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .hero-cta-group {
@@ -116,8 +120,9 @@
     bottom: auto;
     margin-top: 4rem;
     font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.8);
     letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 @keyframes fadeInUp {

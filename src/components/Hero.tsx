@@ -25,13 +25,11 @@ export default function Hero({ onDismiss }: HeroProps) {
                 <h1 className="hero-title">
                     Joe <span className="highlight">"Modular"</span> Micallef
                 </h1>
-                <h2 className="hero-subhead">Temporary Portfolio Space</h2>
+                <h2 className="hero-subhead">Node-based Portfolio</h2>
                 <div className="hero-description">
-                    The intention of this site is to provide a node-based<br />
-                    process flow space for filmmakers, AI artists & designers.<br />
-                    Additionally, it is serving as my temporary portfolio.<br />
-                    Quick "Explore Showcase" to see my work samples.<br />
-                    Sign up to create your own process flows.
+                    <strong>Built by me—concept, design, and code.</strong><br />
+                    This is a node-based workflow platform intended for others to create and share process flows.<br />
+                    At the moment, it also functions as my portfolio—click Explore to see example workflows and projects.
                 </div>
                 <div className="hero-cta-group">
                     <button className="cta-primary" onClick={handleLogin}>
